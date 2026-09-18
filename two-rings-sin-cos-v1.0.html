@@ -98,6 +98,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
       <label style="color:var(--dim);white-space:nowrap;cursor:pointer"><input type="checkbox" id="digTog" checked style="vertical-align:middle"> digits</label>
       <label style="color:#b18cff;white-space:nowrap;cursor:pointer"><input type="checkbox" id="tanTog" style="vertical-align:middle"> tangent line</label>
       <label style="color:#39ff14;white-space:nowrap;cursor:pointer"><input type="checkbox" id="netTog" style="vertical-align:middle"> Neal&#8217;s Net <span style="color:var(--dim)">(checksum)</span></label>
+      <label style="color:#a9c4e2;white-space:nowrap;cursor:pointer"><input type="checkbox" id="arcTog" style="vertical-align:middle"> display angle</label>
     </div>
     <div class="controls" style="margin-top:-4px">
       <label>inverse: set the cos line = <input id="dBox" type="text" style="width:100px;font-size:15px" placeholder="1.61803"></label>
@@ -122,6 +123,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
       <span><i class="sw" style="border-color:var(--blu)"></i>the sin line, crossing to crossing; sin = its length ÷ 2</span>
       <span id="tanLeg"><i class="sw" style="border-color:#b18cff"></i>the tan line, on the upright at the first ring&#8217;s mark 30; tan = its length ÷ the radius</span>
     </div>
+    <div style="margin-top:10px;font-size:12px;line-height:1.55;color:var(--dim);border-top:1px solid var(--edge);padding-top:8px">Everything on this page is computed with Neal&#8217;s Net trig system. The classical sine and cosine appear only as a display piece, to compare the standard answer against this system&#8217;s.</div>
   </div>
   <div class="card note" id="note">
     <p><b>The rings.</b> Both rings are the same disc: sixty positions, one every 6°, with the last digits of the Fibonacci numbers at the marks.</p>
@@ -173,7 +175,7 @@ function smallCS(rDeg){ const x=rDeg*NETPI/180; let c=1,t=1; for(let k=1;k<=12;k
 function netCS(deg){ deg=((deg%360)+360)%360; const p=Math.floor(deg/6+1e-9); const r=deg-6*p; const cP=netCosPos(p), sP=netSinPos(p), sm=smallCS(r); return [cP*sm[0]-sP*sm[1], sP*sm[0]+cP*sm[1]]; }
 const D=n=>d[Number((n%60n+60n)%60n)];
 const cv=document.getElementById('cv'), g=cv.getContext('2d');
-const netTog=document.getElementById('netTog'), tanTog=document.getElementById('tanTog'), axisSel=document.getElementById('axisSel'), zeroSel=document.getElementById('zeroSel'), digTog=document.getElementById('digTog'), ang=document.getElementById('ang'), box=document.getElementById('angBox'), play=document.getElementById('play'), stepSel=document.getElementById('stepSel');
+const netTog=document.getElementById('netTog'), tanTog=document.getElementById('tanTog'), axisSel=document.getElementById('axisSel'), zeroSel=document.getElementById('zeroSel'), digTog=document.getElementById('digTog'), arcTog=document.getElementById('arcTog'), ang=document.getElementById('ang'), box=document.getElementById('angBox'), play=document.getElementById('play'), stepSel=document.getElementById('stepSel');
 const C={cyan:'#00f0ff',mag:'#ff4fd8',grn:'#39ff14',amb:'#ffa000',blu:'#22a0ff',yel:'#ffff33',red:'#ff5566',txt:'#cfe3f5',dim:'#7b92ab'};
 const UNIT=['6 degrees','0.1 degree (6 arc-minutes)','6 arc-seconds','0.1 arc-second','1/600 arc-second'];
 let playing=false, dir=1, current='36';
@@ -234,6 +236,11 @@ function draw(){
   const px=xX+R*s*vx, py=yX+R*s*vy, qx=xX-R*s*vx, qy=yX-R*s*vy;       // the angle's position (clockwise side) and its mirror
   g.fillStyle='#080d16'; g.fillRect(0,0,W,H);
   g.strokeStyle='#1d2c44'; g.setLineDash([6,6]); g.lineWidth=1; g.beginPath(); g.moveTo(x0-380*ux,y0-380*uy); g.lineTo(x0+380*ux,y0+380*uy); g.stroke(); g.setLineDash([]);   // the axis
+  if(arcTog.checked){                                                  // optional background shading: the swept angle from the axis (position 0) to the reading, so the measured angle is visible at any setting
+    const rr=R*0.70, N=Math.max(4,Math.round(Math.abs(deg)/3));
+    g.beginPath(); g.moveTo(x0,y0);
+    for(let i=0;i<=N;i++){ const cc=netCS(deg*i/N), ct=cc[0], st=cc[1], dx=-ct*ux+st*vx, dy=-ct*uy+st*vy; g.lineTo(x0+rr*dx,y0+rr*dy); }   // each sub-angle's cos and sin come from the ring engine (netCS), never the browser's Math.cos/sin
+    g.closePath(); g.fillStyle='rgba(169,196,226,0.11)'; g.fill(); g.strokeStyle='rgba(169,196,226,0.34)'; g.lineWidth=1; g.stroke(); }
   const rg=rung(current); const exact=rg&&rg.L===0;
   const k0=exact?Number(rg.pos%60n):-1;
   const m1=exact?(A+k0)%60:-1, m2=exact?((A-k0)%60+60)%60:-1;         // the second ring's marks under the crossings: the angle's position and its mirror
@@ -304,7 +311,7 @@ function setFromBox(){ const v=box.value.trim(); if(rung(v)===null){ box.style.b
   current=v.replace(/^\+/,''); const f=parseFloat(current); ang.value=((f%360)+360)%360; draw(); }
 function setFromSlider(){ const st=parseFloat(stepSel.value); const dec=st>=1?0:(st>=0.1?1:2); current=parseFloat(ang.value).toFixed(dec); box.value=current; draw(); }
 ang.addEventListener('input',setFromSlider);
-netTog.addEventListener('change',draw); tanTog.addEventListener('change',draw); axisSel.addEventListener('change',draw); zeroSel.addEventListener('change',draw); digTog.addEventListener('change',draw);
+netTog.addEventListener('change',draw); tanTog.addEventListener('change',draw); axisSel.addEventListener('change',draw); zeroSel.addEventListener('change',draw); digTog.addEventListener('change',draw); arcTog.addEventListener('change',draw);
 stepSel.addEventListener('change',()=>{ ang.step=stepSel.value; setFromSlider(); });
 document.getElementById('go').addEventListener('click',setFromBox);
 box.addEventListener('keydown',e=>{ if(e.key==='Enter') setFromBox(); if(e.key==='ArrowUp'){ e.preventDefault(); stepBox(1); } if(e.key==='ArrowDown'){ e.preventDefault(); stepBox(-1); } });
