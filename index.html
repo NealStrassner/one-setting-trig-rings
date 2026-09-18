@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<!--
+  Two Rings: Sine and Cosine at Once — v1.5 (September 12, 2026)
+  Companion page to "New Ways to Do Trigonometry" (Strassner, 2026).
+  © Neal Strassner — https://github.com/NealStrassner
+  One slider (or a typed angle) moves the second ring across the first. The crossings sit on the angle's position and
+  its mirror; the distance between the centres is twice the cosine, the distance between the crossings is twice the
+  sine, their ratio is the tangent, and the digits under the crossings check the setting (Neal's Net). Any angle typed
+  with finitely many decimals lands on a rung of the zoom ladder (level L: 60·60^L positions of 6/60^L degrees), and
+  the page reports the shallowest rung that holds it, as the v2 calculator does. v1.4 adds everything the paper
+  Two Sliding Rings reads from the same setting: the length certificate
+  (cos line/2)^2 + (sin line/2)^2 = 1, the reversal check on the conversion, the inverse (set a line, read the angle).
+  Implementation coded with Claude (Anthropic) under the author's direction.
+  License: CC BY 4.0. Single file, no dependencies, no network calls.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="author" content="Neal Strassner (https://github.com/NealStrassner)">
+<meta name="license" content="CC BY 4.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two Rings — Sine and Cosine at Once</title>
+<style>
+:root{
+  --bg:#070b12; --panel:#0d1420; --panel2:#101a2a; --edge:#1d2c44;
+  --cyan:#00f0ff; --mag:#ff4fd8; --grn:#39ff14; --amb:#ffa000; --blu:#4d8dff; --red:#ff5566; --wht:#ffffff;
+  --txt:#cfe3f5; --dim:#7b92ab; --mono:Consolas,'Cascadia Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.5 'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+header{padding:18px 24px 12px;border-bottom:1px solid var(--edge);
+  background:radial-gradient(1200px 200px at 30% -50px,#11304a55,transparent)}
+header h1{font-size:21px;font-weight:600;letter-spacing:.5px;color:#fff}
+header h1 .net{color:var(--cyan);text-shadow:0 0 14px #2de2ff66}
+header p{color:var(--dim);font-size:12.5px;margin-top:2px}
+main{padding:18px 24px;max-width:1400px;margin:0 auto}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.side{position:sticky;top:12px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+canvas{background:#080d16;border:1px solid var(--edge);border-radius:10px;max-width:100%;height:auto;display:block}
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin-bottom:10px}
+.controls select{min-width:0;max-width:100%}
+.controls label{color:var(--dim);font-size:13px}
+input[type=range]{width:min(520px,100%);accent-color:var(--amb)}
+input[type=text]{background:#0a1322;border:1px solid var(--edge);color:#fff;font:600 18px var(--mono);padding:5px 8px;border-radius:7px;width:150px}
+button{background:var(--panel2);border:1px solid var(--edge);color:var(--txt);padding:7px 14px;border-radius:7px;cursor:pointer;font-size:13px}
+button:hover{border-color:#2b405f}
+button.go{color:#001018;background:var(--amb);border-color:var(--amb);font-weight:600}
+button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-weight:600}
+.stepper{display:inline-flex;flex-direction:column;gap:2px;vertical-align:middle}
+.stepper button{padding:0 8px;font-size:11px;line-height:14px;border-radius:5px}
+.read{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;align-items:start}
+.read>div{min-height:46px}
+.read>div.wide{grid-column:1/-1}
+.read .k{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.read .v{font:600 15px/1.3 var(--mono);overflow-wrap:anywhere;min-height:40px}
+/* fixed heights so readouts never grow or shrink as the angle changes (no jitter while the slider moves) */
+#cd,#cos,#xd,#sin{min-height:62px} #tan{min-height:84px} #cross{min-height:104px} #tl{min-height:124px} #chk{min-height:108px} #rev,#len{min-height:46px}
+@media (min-width:901px){ #cd,#cos,#xd,#sin,#tan{min-height:42px} #cross{min-height:62px} #tl{min-height:102px} #chk{min-height:76px} }
+.amb{color:var(--amb)} .blu{color:var(--blu)} .grn{color:var(--grn)} .cyan{color:var(--cyan)} .mag{color:var(--mag)} .red{color:var(--red)} .wht{color:#fff}
+.note{color:var(--dim);font-size:12.5px}
+.note p{margin:0 0 7px}.note p:last-child{margin-bottom:0}.note b{color:#dbe6f5;font-weight:600}
+.check{font:600 13px var(--mono);padding:5px 8px;border-radius:8px;border:1px solid var(--edge);display:block;min-height:40px}
+.check.ok{color:var(--grn);border-color:#1f5a3a;background:#0b1f16}
+.check.bad{color:var(--red);border-color:#5a1f2a;background:#1f0b10}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font:13px var(--mono);margin-top:8px}
+.sw{display:inline-block;width:26px;height:0;border-top:4px solid;vertical-align:middle;margin-right:7px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Two Rings <span class="net">—</span> Sine and Cosine at Once</h1>
+  <p>Slide the second ring or type any angle. Measure the orange line between the centres and the blue line between the crossings; each divided by 2 is the value. The digits under the crossings check the setting.</p>
+  <p style="font-size:13px;line-height:1.5;color:#9db1c5;margin-top:12px;border-top:1px solid #24344a;padding-top:10px">Invented and discovered by <b>Neal Strassner</b>. Reading sine, cosine and tangent from one setting of two sliding marked rings is his discovery &mdash; a self-verifying instrument that checks its own reading, needing no outside protractor or table.</p>
+</header>
+<main>
+<div class="layout">
+<div>
+  <div class="card">
+    <div class="controls">
+      <span style="display:inline-flex;flex-wrap:wrap;gap:10px;align-items:center"><label>step
+        <select id="stepSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
+          <option value="6" selected>6°</option><option value="1">1°</option><option value="0.1">0.1°</option><option value="0.01">0.01°</option>
+        </select></label><label>0 mark at
+        <select id="zeroSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
+          <option value="45" selected>left</option><option value="0">top</option><option value="15">right</option><option value="30">bottom</option>
+        </select></label><label>axis
+        <select id="axisSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
+          <option value="0" selected>0° — through 0 and 30</option><option value="3">18°</option><option value="6">36°</option><option value="9">54°</option><option value="12">72°</option><option value="15">90° — through 15 and 45</option><option value="18">108°</option><option value="21">126°</option><option value="24">144°</option><option value="27">162°</option>
+        </select></label></span>
+    </div>
+    <div class="controls" style="margin-top:-4px">
+      <span style="color:var(--dim);font-size:13px">show:</span>
+      <label style="color:var(--dim);white-space:nowrap;cursor:pointer"><input type="checkbox" id="digTog" checked style="vertical-align:middle"> digits</label>
+      <label style="color:#b18cff;white-space:nowrap;cursor:pointer"><input type="checkbox" id="tanTog" style="vertical-align:middle"> tangent line</label>
+      <label style="color:#39ff14;white-space:nowrap;cursor:pointer"><input type="checkbox" id="netTog" style="vertical-align:middle"> Neal&#8217;s Net <span style="color:var(--dim)">(checksum)</span></label>
+    </div>
+    <div class="controls" style="margin-top:-4px">
+      <label>inverse: set the cos line = <input id="dBox" type="text" style="width:100px;font-size:15px" placeholder="1.61803"></label>
+      <button id="goD">find angle</button>
+      <label>or set the sin line = <input id="eBox" type="text" style="width:100px;font-size:15px" placeholder="1.17557"></label>
+      <button id="goE">find angle</button>
+    </div>
+    <div class="controls" style="margin-top:10px;border-top:1px solid var(--edge);padding-top:12px">
+      <label for="angBox">angle</label>
+      <span style="display:inline-flex;align-items:center;gap:3px"><input id="angBox" type="text" value="36"><span class="wht" style="font:600 18px var(--mono)">°</span></span><span class="stepper"><button id="up" title="up one unit of the last decimal (or the up arrow key)">▲</button><button id="dn" title="down one unit of the last decimal (or the down arrow key)">▼</button></span>
+      <span class="k" style="color:var(--dim);font-size:11px">steps by the last decimal typed</span>
+      <button class="go" id="go">set</button>
+    </div>
+    <div class="controls" style="margin-top:-2px">
+      <input id="ang" type="range" min="0" max="360" step="6" value="36" style="flex:1 1 200px;min-width:130px"> <button id="play">play</button>
+    </div>
+    <canvas id="cv" width="1120" height="850"></canvas>
+    <div class="legend">
+      <span><i class="sw" style="border-color:var(--cyan)"></i>first ring (stays: the unit circle)</span>
+      <span><i class="sw" style="border-color:var(--mag)"></i>second ring (slides: carries the angle&#8217;s position)</span>
+      <span><i class="sw" style="border-color:var(--amb)"></i>the cos line, centre to centre; cos = its length ÷ 2</span>
+      <span><i class="sw" style="border-color:var(--blu)"></i>the sin line, crossing to crossing; sin = its length ÷ 2</span>
+      <span id="tanLeg"><i class="sw" style="border-color:#b18cff"></i>the tan line, on the upright at the first ring&#8217;s mark 30; tan = its length ÷ the radius</span>
+    </div>
+  </div>
+  <div class="card note" id="note">
+    <p><b>The rings.</b> Both rings are the same disc: sixty positions, one every 6°, with the last digits of the Fibonacci numbers at the marks.</p>
+    <p><b>The setting.</b> The first ring stays: it is the unit circle. Slide the second along the axis until the rings cross on its mark for the angle&#8217;s position, on the clockwise side of the axis, and on its mirror. Under the same crossings the first ring shows 30 minus and 30 plus the step. No protractor or outside tool is needed, because the angle is simply the position, and the ring&#8217;s own marks both set it and check it.</p>
+    <p><b>The readings.</b> Orange line, centre to centre, ÷ 2 = cosine. Blue line, crossing to crossing, ÷ 2 = sine. Blue ÷ orange = tangent.</p>
+    <p><b>The signs.</b> Second ring to the right of the first: cosine positive. To the left: cosine negative. The angle&#8217;s position (the thin ray) above the line: sine positive. Below: sine negative. This matches the unit circle.</p>
+    <p><b>The tangent line.</b> An upright stands at the first ring&#8217;s mark 30, square to the axis. Extend the line from the first centre through the crossing until it meets the upright. The violet length from the foot to that point is the tangent times the radius. It must agree with blue ÷ orange.</p>
+    <p><b>The checks.</b> 1: the two crossing digits add to ten (even position) or are equal (odd position). 2: the position multiplied back gives the angle. 3: (cos line ÷ 2)² + (sin line ÷ 2)² = 1.</p>
+    <p><b>Inverse.</b> Set the cos line or the sin line instead of the angle and the crossings find the angle (arccos, arcsin).</p>
+    <p><b>The menus.</b> 0 mark: turns the whole wheel; the positions always run clockwise. Axis: turns the line of centres to run through another position; the crossings then land on that position plus and minus the step.</p>
+    <p><b>Neal&#8217;s Net.</b> Solid green chords join the two digits that add to ten; dashed green chords join the two equal digits. Every chord is level or upright. On the axis through 0 and 30, or through 15 and 45, the four readings n, 30 &#8722; n, 30 + n and 60 &#8722; n are the corners of one rectangle: its four sides light and the digits at its corners are lit. On any other axis no chord joins the readings, so the digits certify nothing there.</p>
+    <p><b>Finer angles.</b> Any decimal angle sits on a rung of the ladder (level 1: 3,600 marks of 0.1°; level 2: 216,000 marks of 6 arc-seconds; and so on). The digits for a finer angle are read on that finer ring, which carries the same sixty digits.</p>
+  </div>
+</div>
+<div class="side">
+  <div class="card">
+    <div class="read">
+      <div class="wide"><div class="k">rung of the ladder</div><div class="v" id="rung"></div></div>
+      <div><div class="k">position on that ring</div><div class="v cyan" id="pos"></div></div>
+      <div><div class="k">crossings on</div><div class="v cyan" id="cross"></div></div>
+      <div><div class="k">digits under the crossings</div><div class="v cyan" id="digs"></div></div>
+      <div><div class="k">check 1: the digits (setting)</div><div class="check ok" id="chk"></div></div>
+      <div><div class="k">check 2: reversal (conversion)</div><div class="check ok" id="rev"></div></div>
+      <div><div class="k">check 3: (cos line ÷ 2)² + (sin line ÷ 2)² = 1 (measurement)</div><div class="check ok" id="len"></div></div>
+      <div><div class="k">measured: cos line (centre to centre)</div><div class="v amb" id="cd"></div></div>
+      <div><div class="k">cos = cos line ÷ 2</div><div class="v amb" id="cos"></div></div>
+      <div><div class="k">measured: sin line (crossing to crossing)</div><div class="v blu" id="xd"></div></div>
+      <div><div class="k">sin = sin line ÷ 2</div><div class="v blu" id="sin"></div></div>
+      <div><div class="k">tan = sin line ÷ cos line</div><div class="v mag" id="tan"></div></div>
+      <div id="tanRow"><div class="k">measured: tan line (on the upright, ÷ the radius)</div><div class="v" id="tl" style="color:#b18cff"></div></div>
+    </div>
+  </div>
+</div>
+</div>
+</main>
+<footer style="max-width:980px;margin:26px auto 34px;padding:14px 20px 0;border-top:1px solid #24344a;font:12px/1.65 var(--mono);color:var(--dim);text-align:center">The instrument and its method, and applications such as detecting and repairing errors in computing, in AI training, in chips and other digital devices, and as a checksum on radio and other transmitted signals, are the subject of the author&#8217;s pending U.S. provisional patent applications. &copy; 2026 Neal Strassner &middot; Licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#7fd0ff">CC BY 4.0</a> &middot; <a href="https://github.com/NealStrassner" target="_blank" rel="noopener" style="color:#7fd0ff">github.com/NealStrassner</a> &middot; <a href="https://doi.org/10.5281/zenodo.22833894" target="_blank" rel="noopener" style="color:#7fd0ff">the paper (Zenodo)</a></footer>
+<script>
+const d=[0,1]; while(d.length<60) d.push((d[d.length-1]+d[d.length-2])%10);
+// ---- net trig engine: cos, sin and tan from the ring's own anchors, no Math.cos/sin/tan ----
+// anchors: cos 36 = (1+root5)/4 (golden), cos 30 = root3/2; cos 6 = cos(36-30) by angle subtraction.
+const COS36=(1+Math.sqrt(5))/4, SIN36=Math.sqrt(1-COS36*COS36), COS30=Math.sqrt(3)/2, SIN30=0.5;
+const NC6=COS36*COS30+SIN36*SIN30;                         // cos 6 degrees, from the anchors alone
+const CTAB=[1,NC6]; for(let k=2;k<=15;k++) CTAB.push(2*NC6*CTAB[k-1]-CTAB[k-2]);   // cos(6k) by the ring's recurrence
+function netCosPos(n){ n=((n%60)+60)%60; if(n<=15) return CTAB[n]; if(n<=30) return -CTAB[30-n]; if(n<=45) return -CTAB[n-30]; return CTAB[60-n]; }
+function netSinPos(n){ return netCosPos(n-15); }
+// pi from the ring: halve cos/sin 30 thirteen times and read the small arc (no Math.PI)
+const NETPI=(function(){ let c=COS30,s=SIN30; for(let i=0;i<13;i++){ const ch=Math.sqrt((1+c)/2); s=s/(2*ch); c=ch; } return 6*Math.pow(2,13)*s; })();
+function smallCS(rDeg){ const x=rDeg*NETPI/180; let c=1,t=1; for(let k=1;k<=12;k++){ t*=-x*x/((2*k-1)*(2*k)); c+=t; } let s=x; t=x; for(let k=1;k<=12;k++){ t*=-x*x/((2*k)*(2*k+1)); s+=t; } return [c,s]; }
+function netCS(deg){ deg=((deg%360)+360)%360; const p=Math.floor(deg/6+1e-9); const r=deg-6*p; const cP=netCosPos(p), sP=netSinPos(p), sm=smallCS(r); return [cP*sm[0]-sP*sm[1], sP*sm[0]+cP*sm[1]]; }
+const D=n=>d[Number((n%60n+60n)%60n)];
+const cv=document.getElementById('cv'), g=cv.getContext('2d');
+const netTog=document.getElementById('netTog'), tanTog=document.getElementById('tanTog'), axisSel=document.getElementById('axisSel'), zeroSel=document.getElementById('zeroSel'), digTog=document.getElementById('digTog'), ang=document.getElementById('ang'), box=document.getElementById('angBox'), play=document.getElementById('play'), stepSel=document.getElementById('stepSel');
+const C={cyan:'#00f0ff',mag:'#ff4fd8',grn:'#39ff14',amb:'#ffa000',blu:'#22a0ff',yel:'#ffff33',red:'#ff5566',txt:'#cfe3f5',dim:'#7b92ab'};
+const UNIT=['6 degrees','0.1 degree (6 arc-minutes)','6 arc-seconds','0.1 arc-second','1/600 arc-second'];
+let playing=false, dir=1, current='36';
+function rung(str){
+  // exact: the angle as num / 10^k; level L holds it when num * 60^L is divisible by 6 * 10^k
+  const m=/^\s*(-?)(\d*)(?:\.(\d*))?\s*$/.exec(str); if(!m||(m[2]===''&&!m[3])) return null;
+  let intp=m[2]||'0', frac=m[3]||''; let num=BigInt(intp+frac)*(m[1]?-1n:1n); const k=frac.length; let den=6n*10n**BigInt(k);
+  const N0=360n*10n**BigInt(k); num=((num%N0)+N0)%N0;                        // reduce into one turn, exactly
+  for(let L=0n;L<=12n;L++){ const top=num*60n**L; if(top%den===0n){ const N=60n*60n**L; const pos=top/den; return {L:Number(L),pos,N,mirror:(N-pos)%N}; } }
+  return null;
+}
+function ringDigits(cx,cy,R,color,hl,ox,oy,lit){   // lit: positions whose digit is lit in green (the net's chord ends)
+  // position k sits at bearing 6(k+Z) clockwise from the top; Z turns the whole wheel a quarter at a time (0 mark left/top/right/bottom).
+  // Digits sit just outside the rim; the discs are clear, so every digit of both rings is drawn; those lying inside the other disc are very dark grey.
+  // the crossing marks (hl) get a bigger dot and their digits are lit.
+  g.textAlign='center'; g.textBaseline='middle';
+  for(let k=0;k<60;k++){
+    const a=(k+Z)*Math.PI/30, ux=Math.sin(a), uy=-Math.cos(a), x=cx+R*ux, y=cy+R*uy;
+    g.fillStyle=color; g.beginPath(); g.arc(x,y,hl.has(k)?4:2,0,7); g.fill();
+    const tx=cx+(R+16)*ux, ty=cy+(R+16)*uy;
+    const dg=d[k], inside=Math.hypot(tx-ox,ty-oy)<R;
+    if(hl.has(k)){ g.font='bold 22px Consolas,monospace'; g.fillStyle='#080d16'; g.fillRect(tx-11,ty-11,22,22); g.fillStyle=color; glow(color,22); g.fillText(dg,tx,ty); g.fillText(dg,tx,ty); noglow(); }   // the crossing mark's own digit, lit
+    else if(lit&&lit.has(k)){ g.font='bold 22px Consolas,monospace'; g.fillStyle='#080d16'; g.fillRect(tx-11,ty-11,22,22); g.fillStyle='#39ff14'; glow('#39ff14',22); g.fillText(dg,tx,ty); g.fillText(dg,tx,ty); noglow(); }   // the net's other chord ends, lit green
+    else if(inside){ g.font='bold 13px Consolas,monospace'; g.fillStyle='#3a4250'; g.fillText(dg,tx,ty); }
+    else if(dg===5||dg===0){ g.font='bold 16px Consolas,monospace'; g.fillStyle=dg===5?C.yel:C.amb; glow(g.fillStyle,12); g.fillText(dg,tx,ty); noglow(); }
+    else { g.font='bold 13px Consolas,monospace'; g.fillStyle=color; g.fillText(dg,tx,ty); }
+  }
+}
+const NET=[]; { const seen=new Set(); for(let n=1;n<60;n++){ if(n%15===0) continue;
+  const t=n%2===0?60-n:((30-n)%60+60)%60, e=n%2===0?((30-n)%60+60)%60:60-n;   // the ten partner and the equal partner: the rectangle's two sides at n
+  for(const [m,kind] of [[t,'ten'],[e,'equal']]){ const key=kind+Math.min(n,m); if(seen.has(key)) continue; seen.add(key); NET.push({key,a:n,b:m,kind}); } } }
+const netA={}; let netFrame=false;
+function drawNet(cx0,cy,R,corners){
+  const active=new Set(); for(const ch of NET) if(corners.has(ch.a)&&corners.has(ch.b)) active.add(ch.key);   // a chord lights when both its ends are readings: on a cardinal axis, the four sides of the rectangle
+  // every chord faint; the chord(s) through the crossings at full brightness; brightness eases between settings
+  let moving=false;
+  for(const ch of NET){ const t=active.has(ch.key)?1:0; const v=netA[ch.key]===undefined?t:netA[ch.key]; const nv=v+(t-v)*0.22; netA[ch.key]=Math.abs(nv-t)<0.01?t:nv; if(netA[ch.key]!==t) moving=true;
+    const aa=(ch.a+Z)*Math.PI/30, ab=(ch.b+Z)*Math.PI/30, x1=cx0+R*Math.sin(aa), y1=cy-R*Math.cos(aa), x2=cx0+R*Math.sin(ab), y2=cy-R*Math.cos(ab);
+    const k=netA[ch.key]; g.strokeStyle='rgba(57,255,20,'+(0.13+0.87*k).toFixed(3)+')'; g.lineWidth=1+2*k; if(k>0.02) glow('rgba(57,255,20,'+k.toFixed(2)+')',16*k);
+    if(ch.kind==='equal') g.setLineDash([5,5]);
+    g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke(); g.setLineDash([]); noglow(); }
+
+  if(moving&&!netFrame){ netFrame=true; requestAnimationFrame(()=>{ netFrame=false; draw(); }); }
+}
+function glow(col,b){ g.shadowColor=col; g.shadowBlur=b; }
+function noglow(){ g.shadowBlur=0; g.shadowColor='transparent'; }
+let Z=45;
+function draw(){
+  Z=parseInt(zeroSel.value);
+  const deg=parseFloat(current); if(isNaN(deg)) return;
+  const cs=netCS(deg), c=cs[0], s=cs[1];   // cos and sin from the net engine (the ring's anchors + recurrence), not a library call
+  const W=cv.width,H=cv.height, R=110, cx=W/2;
+  const A=parseInt(axisSel.value), phi=(A+Z)*Math.PI/30;                  // the join axis: the line of centres runs through positions A and A+30
+  const ux=Math.sin(phi), uy=-Math.cos(phi), vx=Math.cos(phi), vy=Math.sin(phi);   // u along the axis toward A; v the clockwise perpendicular
+  const cy0=425, x0=cx, y0=cy0;                                        // the first ring never moves
+  const x1=x0-2*R*c*ux, y1=y0-2*R*c*uy;                               // the second slides along the axis by 2R cos, away from position A: to the right of the first when the 0 mark is at the left and the cosine is positive
+  const xX=x0-R*c*ux, yX=y0-R*c*uy;                                   // the crossing line meets the axis halfway
+  const px=xX+R*s*vx, py=yX+R*s*vy, qx=xX-R*s*vx, qy=yX-R*s*vy;       // the angle's position (clockwise side) and its mirror
+  g.fillStyle='#080d16'; g.fillRect(0,0,W,H);
+  g.strokeStyle='#1d2c44'; g.setLineDash([6,6]); g.lineWidth=1; g.beginPath(); g.moveTo(x0-380*ux,y0-380*uy); g.lineTo(x0+380*ux,y0+380*uy); g.stroke(); g.setLineDash([]);   // the axis
+  const rg=rung(current); const exact=rg&&rg.L===0;
+  const k0=exact?Number(rg.pos%60n):-1;
+  const m1=exact?(A+k0)%60:-1, m2=exact?((A-k0)%60+60)%60:-1;         // the second ring's marks under the crossings: the angle's position and its mirror
+  const n1=exact?((A+30-k0)%60+60)%60:-1, n2=exact?((A+30+k0)%60+60)%60:-1;   // the first ring's marks under the same crossings: the position's two partners
+  const hl1=new Set(exact?[n1,n2]:[]), hl2=new Set(exact?[m1,m2]:[]);
+  for(const [cxR,cyR,col,hl,ox,oy] of [[x0,y0,C.cyan,hl1,x1,y1],[x1,y1,C.mag,hl2,x0,y0]]){
+    glow(col,8); g.strokeStyle=col; g.lineWidth=2; g.beginPath(); g.arc(cxR,cyR,R,0,7); g.stroke(); noglow();
+    if(digTog.checked) ringDigits(cxR,cyR,R,col,hl,ox,oy,(netTog.checked&&cxR===x0&&exact)?new Set([m1,m2]):null);
+  }
+  if(netTog.checked){ drawNet(x0,y0,R,new Set(exact?[n1,n2,m1,m2]:[])); }   // the four readings as positions on the still ring: n, 30-n, 30+n, 60-n when the axis is cardinal
+  // the two lines
+  glow(C.amb,18); g.strokeStyle=C.amb; g.lineWidth=6; g.beginPath(); g.moveTo(x0,y0); g.lineTo(x1,y1); g.stroke();
+  glow(C.blu,18); g.strokeStyle=C.blu; g.lineWidth=6; g.beginPath(); g.moveTo(px,py); g.lineTo(qx,qy); g.stroke(); noglow();
+  for(const [cxR,cyR,col] of [[x0,y0,C.cyan],[x1,y1,C.mag]]){ g.fillStyle=col; g.beginPath(); g.arc(cxR,cyR,7,0,7); g.fill(); }
+  for(const [ax,ay] of [[px,py],[qx,qy]]){ glow(C.blu,14); g.fillStyle=C.blu; g.beginPath(); g.arc(ax,ay,8,0,7); g.fill(); noglow(); g.fillStyle='#fff'; g.beginPath(); g.arc(ax,ay,3,0,7); g.fill(); }
+  g.strokeStyle='#ffffff99'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x0,y0); g.lineTo(px,py); g.stroke();   // the ray to the angle's own position
+  const TAN='#b18cff'; let tl=null;
+  if(tanTog.checked&&Math.abs(c)>1e-9){                                   // the gnomon: an upright at the first ring's mark A+30, square to the axis
+    const fx=x0-R*ux, fy=y0-R*uy, t=s/c, tx=fx+R*t*vx, ty=fy+R*t*vy;      // the foot, and the intercept R·tan along the upright (clockwise side positive)
+    const L=Math.min(Math.max(Math.abs(R*t)+40,150),380);
+    g.strokeStyle=TAN; g.lineWidth=1.2; g.setLineDash([4,5]); g.beginPath(); g.moveTo(fx-L*vx,fy-L*vy); g.lineTo(fx+L*vx,fy+L*vy); g.stroke(); g.setLineDash([]);   // the upright
+    const off=Math.abs(t)*R>380, k=off?380/(Math.abs(t)*R):1, ex=fx+(tx-fx)*k, ey=fy+(ty-fy)*k;   // beyond the drawing the line is cut at the edge and its value still printed
+    g.strokeStyle='#ffffff66'; g.lineWidth=1; g.setLineDash([3,4]); g.beginPath(); g.moveTo(px,py); g.lineTo(ex,ey); g.stroke(); g.setLineDash([]);   // the line through the centre and the crossing, extended
+    glow(TAN,18); g.strokeStyle=TAN; g.lineWidth=6; g.beginPath(); g.moveTo(fx,fy); g.lineTo(ex,ey); g.stroke(); noglow();
+    if(!off){ g.fillStyle=TAN; g.beginPath(); g.arc(tx,ty,7,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(tx,ty,3,0,7); g.fill(); }
+    g.fillStyle=TAN; g.font='bold 14px Consolas,monospace'; g.textAlign='left'; g.textBaseline='middle'; g.fillText('tan line = '+Math.abs(t).toFixed(5)+' × R'+(off?' (runs off the drawing)':''), ex+14, ey);
+    tl=t;
+    g.fillStyle=TAN; g.beginPath(); g.arc(fx,fy,4,0,7); g.fill();
+  }
+  const dn=exact?d[m1]:(rg?D(rg.pos):null), dm=exact?d[m2]:(rg?D(rg.mirror):null);   // the digits under the crossings on the ring that carries the angle
+  g.font='bold 15px Consolas,monospace'; g.textAlign='center'; g.textBaseline='middle';
+  const pv=v=>(v<0?'':' ')+v.toFixed(5);   // fixed 8-char value width, so these centered lines never shift as the numbers change (or the minus sign appears)
+  g.fillStyle=C.amb; g.fillText('cos line = '+pv(2*c)+' (centre to centre, along the axis)     cos = '+pv(2*c)+' \u00f7 2 = '+pv(c), W/2, H-50);
+  g.fillStyle=C.blu; g.fillText('sin line = '+pv(2*Math.abs(s))+' (crossing to crossing, across the axis)     sin = '+pv(2*s)+' \u00f7 2 = '+pv(s), W/2, H-26);
+  g.fillStyle=C.dim; g.font='13px Consolas,monospace'; g.textAlign='left';
+  g.fillText(c<0?'second ring toward position '+A+' of the first: cosine negative':'second ring away from position '+A+', toward '+((A+30)%60)+' (to the right when the 0 mark is at the left): cosine positive', 16, 18);
+  g.fillText(s<0?'position on the counter-clockwise side of the axis: sine negative':'position on the clockwise side of the axis: sine positive', 16, 36);
+  g.fillText(exact?'each crossing lies on a mark of both rings: magenta, the second ring, carries the angle\'s position and its mirror; cyan, the first ring, their two partners'
+    :'at this angle the crossings fall between the marks of the 60-ring (only multiples of 6° land on a mark); the finer ring that holds it is in the panel', 16, H-8);
+  // readouts
+  document.getElementById('rung').textContent=rg?('level '+rg.L+': steps of '+(UNIT[rg.L]||('6/60^'+rg.L+' degrees'))):'not a decimal angle';
+  document.getElementById('pos').textContent=rg?(rg.pos+' of '+rg.N):'';
+  document.getElementById('cross').textContent=exact?(m1+' and '+m2+' on the second ring; '+n1+' and '+n2+' on the first'+(A?'  (axis through '+A+')':'')):(rg?(rg.pos+' and '+rg.mirror):'');
+  document.getElementById('digs').textContent=rg?(dn+' and '+dm):'';
+  const chk=document.getElementById('chk');
+  if(rg&&(exact||A===0)){ const kk=exact?k0:null; const even=exact?(k0%2===0):(rg.pos%2n===0n);
+    const isEq=dn===dm, isTen=(dn+dm)%10===0;
+    if(A%15===0){ const ok=even?isTen:isEq;
+      chk.textContent=(even?(dn+' + '+dm+' = '+(dn+dm)+' (even step: ten)'):(dn+' = '+dm+' (odd step: equal)'))+(ok?'  ok':'  FAIL'); chk.className='check '+(ok?'ok':'bad'); }
+    else { chk.textContent='axis through '+A+': digits '+dn+' and '+dm+(isEq?' are equal':isTen?' sum to ten':' obey no law')+' (only the axes through 0 and 15 certify every step)'; chk.className='check '+((isEq||isTen)?'ok':'bad'); }
+  }
+  else if(rg){ chk.textContent='between marks: finer rings are read on the axis through 0'; chk.className='check bad'; }
+  else { chk.textContent='type a decimal angle'; chk.className='check bad'; }
+  document.getElementById('cd').textContent='cos line = '+(2*c).toFixed(5)+(c<0?'  (cosine negative)':'');
+  document.getElementById('cos').textContent='cos '+current+'° = '+(2*c).toFixed(5)+' ÷ 2 = '+c.toFixed(5);
+  document.getElementById('xd').textContent='sin line = '+(2*Math.abs(s)).toFixed(5)+(s<0?'  (sine negative)':'');
+  document.getElementById('sin').textContent='sin '+current+'° = '+(s<0?'-':'')+(2*Math.abs(s)).toFixed(5)+' ÷ 2 = '+s.toFixed(5);
+  document.getElementById('tan').textContent='tan '+current+'° = '+(Math.abs(c)<1e-12?'undefined (cos line = 0)':((s<0?'-':'')+(2*Math.abs(s)).toFixed(5)+' ÷ '+(2*c).toFixed(5)+' = '+(s/c).toFixed(5)));
+  document.getElementById('tanLeg').hidden=document.getElementById('tanRow').hidden=!tanTog.checked;
+  document.getElementById('tl').textContent=!tanTog.checked?'':(Math.abs(c)<1e-9?'no intercept: the line runs parallel to the upright':(tl===null?'':('tan line = '+Math.abs(tl).toFixed(5)+' × R'+(tl<0?', below the foot: tangent negative':', above the foot: tangent positive')+(Math.abs(Math.abs(tl)-Math.abs(s/c))<1e-9?'  agrees with sin line ÷ cos line':'  FAIL'))));
+  const fx=(v,nd=5)=>isFinite(v)?v.toFixed(nd):'undefined';
+  const lenv=(c*c+s*s), lenok=Math.abs(lenv-1)<1e-9; const le=document.getElementById('len');
+  le.textContent=(c*c).toFixed(5)+' + '+(s*s).toFixed(5)+' = '+lenv.toFixed(5)+(lenok?'  ok':'  FAIL'); le.className='check '+(lenok?'ok':'bad');
+  const rv=document.getElementById('rev');
+  if(rg){ const stepName=rg.L===0?'6°':(rg.L===1?'0.1°':'(6/60^'+rg.L+')°'); rv.textContent=rg.pos+' × '+stepName+' = '+current+'°  ok'; rv.className='check ok'; } else { rv.textContent='—'; rv.className='check bad'; }
+}
+function setFromBox(){ const v=box.value.trim(); if(rung(v)===null){ box.style.borderColor='#ff5566'; return; } box.style.borderColor='';
+  current=v.replace(/^\+/,''); const f=parseFloat(current); ang.value=((f%360)+360)%360; draw(); }
+function setFromSlider(){ const st=parseFloat(stepSel.value); const dec=st>=1?0:(st>=0.1?1:2); current=parseFloat(ang.value).toFixed(dec); box.value=current; draw(); }
+ang.addEventListener('input',setFromSlider);
+netTog.addEventListener('change',draw); tanTog.addEventListener('change',draw); axisSel.addEventListener('change',draw); zeroSel.addEventListener('change',draw); digTog.addEventListener('change',draw);
+stepSel.addEventListener('change',()=>{ ang.step=stepSel.value; setFromSlider(); });
+document.getElementById('go').addEventListener('click',setFromBox);
+box.addEventListener('keydown',e=>{ if(e.key==='Enter') setFromBox(); if(e.key==='ArrowUp'){ e.preventDefault(); stepBox(1); } if(e.key==='ArrowDown'){ e.preventDefault(); stepBox(-1); } });
+function stepBox(dir){ const v=box.value.trim(); const m=/^(-?\d*)(?:\.(\d*))?$/.exec(v); if(!m||v===''||v==='-') return;
+  const dec=(m[2]||'').length; const scale=10n**BigInt(dec);
+  let n=BigInt((m[1]||'0')+(m[2]||'')); if(v.startsWith('-')&&!(m[1]||'').startsWith('-')) n=-n;
+  n+=BigInt(dir); const full=360n*scale; n=((n%full)+full)%full;
+  let str=n.toString(); if(dec>0){ str=str.padStart(dec+1,'0'); str=str.slice(0,-dec)+'.'+str.slice(-dec); }
+  box.value=str; setFromBox(); }
+function holdRepeat(btn, dir){ let t1=null, t2=null; const stop=()=>{ if(t1) clearTimeout(t1); if(t2) clearInterval(t2); t1=t2=null; };
+  const start=e=>{ e.preventDefault(); stop(); stepBox(dir); t1=setTimeout(()=>{ t2=setInterval(()=>stepBox(dir),70); },380); };
+  btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:false});
+  for(const ev of ['mouseup','mouseleave','touchend','touchcancel']) btn.addEventListener(ev,stop);
+  btn.addEventListener('click',e=>e.preventDefault()); }
+holdRepeat(document.getElementById('up'),1); holdRepeat(document.getElementById('dn'),-1);
+function angleFromLength(v, isD){ if(!isFinite(v)||Math.abs(v)>2) return null; const target=v/2;   // the angle whose net cos (or sin) equals the halved length, found by the engine, not arccos/arcsin
+  let lo=isD?0:-90, hi=isD?180:90;
+  for(let i=0;i<64;i++){ const mid=(lo+hi)/2, val=isD?netCS(mid)[0]:netCS(mid)[1];
+    if(isD){ if(val>target) lo=mid; else hi=mid; } else { if(val<target) lo=mid; else hi=mid; } }
+  let dg=(lo+hi)/2; const r2=Math.round(dg*100)/100; if(Math.abs(dg-r2)<5e-4) dg=r2; else dg=Math.round(dg*10000)/10000; return String(dg); }
+function setFromLength(isD){ const bx=document.getElementById(isD?'dBox':'eBox'); const a=angleFromLength(parseFloat(bx.value), isD); if(a===null){ bx.style.borderColor='#ff5566'; return; } bx.style.borderColor=''; box.value=a; setFromBox(); }
+document.getElementById('goD').addEventListener('click',()=>setFromLength(true));
+document.getElementById('goE').addEventListener('click',()=>setFromLength(false));
+document.getElementById('dBox').addEventListener('keydown',e=>{ if(e.key==='Enter') setFromLength(true); });
+document.getElementById('eBox').addEventListener('keydown',e=>{ if(e.key==='Enter') setFromLength(false); });
+play.addEventListener('click',()=>{playing=!playing; play.textContent=playing?'pause':'play'; play.classList.toggle('on',playing); if(playing) tick();});
+function tick(){ if(!playing) return; const st=Math.max(parseFloat(stepSel.value),0.5); let v=parseFloat(ang.value)+dir*st; if(v>=360){v=360;dir=-1;} if(v<=0){v=0;dir=1;}
+  ang.value=v; setFromSlider(); setTimeout(tick,30); }
+draw();
+</script>
+</body>
+</html>
