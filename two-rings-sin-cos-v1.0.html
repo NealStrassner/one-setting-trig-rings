@@ -67,6 +67,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
 .check{font:600 13px var(--mono);padding:5px 8px;border-radius:8px;border:1px solid var(--edge);display:block;min-height:40px}
 .check.ok{color:var(--grn);border-color:#1f5a3a;background:#0b1f16}
 .check.bad{color:var(--red);border-color:#5a1f2a;background:#1f0b10}
+#rev,#len{min-height:60px}   /* reserve the deep-ladder height so the reversal/measurement boxes never grow or shrink as the rung level changes during play */
 .legend{display:flex;flex-wrap:wrap;gap:8px 22px;font:13px var(--mono);margin-top:8px}
 .sw{display:inline-block;width:26px;height:0;border-top:4px solid;vertical-align:middle;margin-right:7px}
 </style>
@@ -75,7 +76,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
 <header>
   <h1>Two Rings <span class="net">—</span> Sine and Cosine at Once</h1>
   <p>Slide the second ring or type any angle. Measure the orange line between the centres and the blue line between the crossings; each divided by 2 is the value. The digits under the crossings check the setting.</p>
-  <p style="font-size:13px;line-height:1.5;color:#9db1c5;margin-top:12px;border-top:1px solid #24344a;padding-top:10px">Invented and discovered by <b>Neal Strassner</b>. Reading sine, cosine and tangent from one setting of two sliding marked rings is his discovery &mdash; a self-verifying instrument that checks its own reading, needing no outside protractor or table.</p>
+  <p style="font-size:13px;line-height:1.5;color:#9db1c5;margin-top:12px;border-top:1px solid #24344a;padding-top:10px">Invented and discovered by <b>Neal Strassner</b>. Reading sine, cosine and tangent from one setting of two sliding marked rings is his discovery &mdash; a self-verifying instrument that checks its own reading, needing no outside protractor or table. <a href="https://doi.org/10.5281/zenodo.22833894" target="_blank" rel="noopener" style="color:#7fd0ff;border-bottom:1px solid #7fd0ff;text-decoration:none">Read the paper on Zenodo</a>.</p>
 </header>
 <main>
 <div class="layout">
@@ -84,7 +85,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
     <div class="controls">
       <span style="display:inline-flex;flex-wrap:wrap;gap:10px;align-items:center"><label>step
         <select id="stepSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
-          <option value="6" selected>6°</option><option value="1">1°</option><option value="0.1">0.1°</option><option value="0.01">0.01°</option>
+          <option value="6" selected>6°</option><option value="1">1°</option><option value="0.1">0.1°</option><option value="0.01">0.01°</option><option value="0.001">0.001°</option><option value="0.0001">0.0001°</option><option value="0.00001">0.00001°</option><option value="0.000001">0.000001°</option><option value="0.0000001">0.0000001°</option><option value="0.00000001">0.00000001°</option>
         </select></label><label>0 mark at
         <select id="zeroSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
           <option value="45" selected>left</option><option value="0">top</option><option value="15">right</option><option value="30">bottom</option>
@@ -123,7 +124,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
       <span><i class="sw" style="border-color:var(--blu)"></i>the sin line, crossing to crossing; sin = its length ÷ 2</span>
       <span id="tanLeg"><i class="sw" style="border-color:#b18cff"></i>the tan line, on the upright at the first ring&#8217;s mark 30; tan = its length ÷ the radius</span>
     </div>
-    <div style="margin-top:10px;font-size:12px;line-height:1.55;color:var(--dim);border-top:1px solid var(--edge);padding-top:8px">Everything on this page is computed with Neal&#8217;s Net trig system. The classical sine and cosine appear only as a display piece, to compare the standard answer against this system&#8217;s.</div>
+    <div style="margin-top:10px;font-size:12px;line-height:1.55;color:var(--dim);border-top:1px solid var(--edge);padding-top:8px">Everything on this page is computed with Neal&#8217;s Net trig system, from the ring&#8217;s own anchors, not the browser&#8217;s sine and cosine.</div>
   </div>
   <div class="card note" id="note">
     <p><b>The rings.</b> Both rings are the same disc: sixty positions, one every 6°, with the last digits of the Fibonacci numbers at the marks.</p>
@@ -131,7 +132,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
     <p><b>The readings.</b> Orange line, centre to centre, ÷ 2 = cosine. Blue line, crossing to crossing, ÷ 2 = sine. Blue ÷ orange = tangent.</p>
     <p><b>The signs.</b> Second ring to the right of the first: cosine positive. To the left: cosine negative. The angle&#8217;s position (the thin ray) above the line: sine positive. Below: sine negative. This matches the unit circle.</p>
     <p><b>The tangent line.</b> An upright stands at the first ring&#8217;s mark 30, square to the axis. Extend the line from the first centre through the crossing until it meets the upright. The violet length from the foot to that point is the tangent times the radius. It must agree with blue ÷ orange.</p>
-    <p><b>The checks.</b> 1: the two crossing digits add to ten (even position) or are equal (odd position). 2: the position multiplied back gives the angle. 3: (cos line ÷ 2)² + (sin line ÷ 2)² = 1.</p>
+    <p><b>The checks.</b> 1: the two crossing digits add to ten (even position) or are equal (odd position). 2: (cos line ÷ 2)² + (sin line ÷ 2)² = 1. 3: the position multiplied back gives the angle.</p>
     <p><b>Inverse.</b> Set the cos line or the sin line instead of the angle and the crossings find the angle (arccos, arcsin).</p>
     <p><b>The menus.</b> 0 mark: turns the whole wheel; the positions always run clockwise. Axis: turns the line of centres to run through another position; the crossings then land on that position plus and minus the step.</p>
     <p><b>Neal&#8217;s Net.</b> Solid green chords join the two digits that add to ten; dashed green chords join the two equal digits. Every chord is level or upright. On the axis through 0 and 30, or through 15 and 45, the four readings n, 30 &#8722; n, 30 + n and 60 &#8722; n are the corners of one rectangle: its four sides light and the digits at its corners are lit. On any other axis no chord joins the readings, so the digits certify nothing there.</p>
@@ -143,11 +144,11 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
     <div class="read">
       <div class="wide"><div class="k">rung of the ladder</div><div class="v" id="rung"></div></div>
       <div><div class="k">position on that ring</div><div class="v cyan" id="pos"></div></div>
-      <div><div class="k">crossings on</div><div class="v cyan" id="cross"></div></div>
-      <div><div class="k">digits under the crossings</div><div class="v cyan" id="digs"></div></div>
       <div><div class="k">check 1: the digits (setting)</div><div class="check ok" id="chk"></div></div>
-      <div><div class="k">check 2: reversal (conversion)</div><div class="check ok" id="rev"></div></div>
-      <div><div class="k">check 3: (cos line ÷ 2)² + (sin line ÷ 2)² = 1 (measurement)</div><div class="check ok" id="len"></div></div>
+      <div><div class="k">crossings on</div><div class="v cyan" id="cross"></div></div>
+      <div><div class="k">check 2: (cos line ÷ 2)² + (sin line ÷ 2)² = 1 (measurement)</div><div class="check ok" id="len"></div></div>
+      <div><div class="k">digits under the crossings</div><div class="v cyan" id="digs"></div></div>
+      <div><div class="k">check 3: reversal (conversion)</div><div class="check ok" id="rev"></div></div>
       <div><div class="k">measured: cos line (centre to centre)</div><div class="v amb" id="cd"></div></div>
       <div><div class="k">cos = cos line ÷ 2</div><div class="v amb" id="cos"></div></div>
       <div><div class="k">measured: sin line (crossing to crossing)</div><div class="v blu" id="xd"></div></div>
@@ -193,7 +194,7 @@ function ringDigits(cx,cy,R,color,hl,ox,oy,lit){   // lit: positions whose digit
   // the crossing marks (hl) get a bigger dot and their digits are lit.
   g.textAlign='center'; g.textBaseline='middle';
   for(let k=0;k<60;k++){
-    const a=(k+Z)*Math.PI/30, ux=Math.sin(a), uy=-Math.cos(a), x=cx+R*ux, y=cy+R*uy;
+    const _e=netCS((k+Z)*6), ux=_e[1], uy=-_e[0], x=cx+R*ux, y=cy+R*uy;   // mark bearing from the ring engine, not Math.sin/cos
     g.fillStyle=color; g.beginPath(); g.arc(x,y,hl.has(k)?4:2,0,7); g.fill();
     const tx=cx+(R+16)*ux, ty=cy+(R+16)*uy;
     const dg=d[k], inside=Math.hypot(tx-ox,ty-oy)<R;
@@ -213,7 +214,7 @@ function drawNet(cx0,cy,R,corners){
   // every chord faint; the chord(s) through the crossings at full brightness; brightness eases between settings
   let moving=false;
   for(const ch of NET){ const t=active.has(ch.key)?1:0; const v=netA[ch.key]===undefined?t:netA[ch.key]; const nv=v+(t-v)*0.22; netA[ch.key]=Math.abs(nv-t)<0.01?t:nv; if(netA[ch.key]!==t) moving=true;
-    const aa=(ch.a+Z)*Math.PI/30, ab=(ch.b+Z)*Math.PI/30, x1=cx0+R*Math.sin(aa), y1=cy-R*Math.cos(aa), x2=cx0+R*Math.sin(ab), y2=cy-R*Math.cos(ab);
+    const _ea=netCS((ch.a+Z)*6), _eb=netCS((ch.b+Z)*6), x1=cx0+R*_ea[1], y1=cy-R*_ea[0], x2=cx0+R*_eb[1], y2=cy-R*_eb[0];   // chord ends from the ring engine
     const k=netA[ch.key]; g.strokeStyle='rgba(57,255,20,'+(0.13+0.87*k).toFixed(3)+')'; g.lineWidth=1+2*k; if(k>0.02) glow('rgba(57,255,20,'+k.toFixed(2)+')',16*k);
     if(ch.kind==='equal') g.setLineDash([5,5]);
     g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke(); g.setLineDash([]); noglow(); }
@@ -228,8 +229,8 @@ function draw(){
   const deg=parseFloat(current); if(isNaN(deg)) return;
   const cs=netCS(deg), c=cs[0], s=cs[1];   // cos and sin from the net engine (the ring's anchors + recurrence), not a library call
   const W=cv.width,H=cv.height, R=110, cx=W/2;
-  const A=parseInt(axisSel.value), phi=(A+Z)*Math.PI/30;                  // the join axis: the line of centres runs through positions A and A+30
-  const ux=Math.sin(phi), uy=-Math.cos(phi), vx=Math.cos(phi), vy=Math.sin(phi);   // u along the axis toward A; v the clockwise perpendicular
+  const A=parseInt(axisSel.value);                  // the join axis: the line of centres runs through positions A and A+30
+  const _ep=netCS((A+Z)*6), ux=_ep[1], uy=-_ep[0], vx=_ep[0], vy=_ep[1];   // u along the axis toward A; v the clockwise perpendicular (bearings from the ring engine)
   const cy0=425, x0=cx, y0=cy0;                                        // the first ring never moves
   const x1=x0-2*R*c*ux, y1=y0-2*R*c*uy;                               // the second slides along the axis by 2R cos, away from position A: to the right of the first when the 0 mark is at the left and the cosine is positive
   const xX=x0-R*c*ux, yX=y0-R*c*uy;                                   // the crossing line meets the axis halfway
@@ -294,22 +295,22 @@ function draw(){
   }
   else if(rg){ chk.textContent='between marks: finer rings are read on the axis through 0'; chk.className='check bad'; }
   else { chk.textContent='type a decimal angle'; chk.className='check bad'; }
-  document.getElementById('cd').textContent='cos line = '+(2*c).toFixed(5)+(c<0?'  (cosine negative)':'');
-  document.getElementById('cos').textContent='cos '+current+'° = '+(2*c).toFixed(5)+' ÷ 2 = '+c.toFixed(5);
-  document.getElementById('xd').textContent='sin line = '+(2*Math.abs(s)).toFixed(5)+(s<0?'  (sine negative)':'');
-  document.getElementById('sin').textContent='sin '+current+'° = '+(s<0?'-':'')+(2*Math.abs(s)).toFixed(5)+' ÷ 2 = '+s.toFixed(5);
-  document.getElementById('tan').textContent='tan '+current+'° = '+(Math.abs(c)<1e-12?'undefined (cos line = 0)':((s<0?'-':'')+(2*Math.abs(s)).toFixed(5)+' ÷ '+(2*c).toFixed(5)+' = '+(s/c).toFixed(5)));
+  document.getElementById('cd').textContent='cos line = '+(2*c).toFixed(8)+(c<0?'  (cosine negative)':'');
+  document.getElementById('cos').textContent='cos '+current+'° = '+(2*c).toFixed(8)+' ÷ 2 = '+c.toFixed(8);
+  document.getElementById('xd').textContent='sin line = '+(2*Math.abs(s)).toFixed(8)+(s<0?'  (sine negative)':'');
+  document.getElementById('sin').textContent='sin '+current+'° = '+(s<0?'-':'')+(2*Math.abs(s)).toFixed(8)+' ÷ 2 = '+s.toFixed(8);
+  document.getElementById('tan').textContent='tan '+current+'° = '+(Math.abs(c)<1e-12?'undefined (cos line = 0)':((s<0?'-':'')+(2*Math.abs(s)).toFixed(8)+' ÷ '+(2*c).toFixed(8)+' = '+(s/c).toFixed(8)));
   document.getElementById('tanLeg').hidden=document.getElementById('tanRow').hidden=!tanTog.checked;
   document.getElementById('tl').textContent=!tanTog.checked?'':(Math.abs(c)<1e-9?'no intercept: the line runs parallel to the upright':(tl===null?'':('tan line = '+Math.abs(tl).toFixed(5)+' × R'+(tl<0?', below the foot: tangent negative':', above the foot: tangent positive')+(Math.abs(Math.abs(tl)-Math.abs(s/c))<1e-9?'  agrees with sin line ÷ cos line':'  FAIL'))));
   const fx=(v,nd=5)=>isFinite(v)?v.toFixed(nd):'undefined';
   const lenv=(c*c+s*s), lenok=Math.abs(lenv-1)<1e-9; const le=document.getElementById('len');
-  le.textContent=(c*c).toFixed(5)+' + '+(s*s).toFixed(5)+' = '+lenv.toFixed(5)+(lenok?'  ok':'  FAIL'); le.className='check '+(lenok?'ok':'bad');
+  le.textContent=(c*c).toFixed(8)+' + '+(s*s).toFixed(8)+' = '+lenv.toFixed(8)+(lenok?'  ok':'  FAIL'); le.className='check '+(lenok?'ok':'bad');
   const rv=document.getElementById('rev');
   if(rg){ const stepName=rg.L===0?'6°':(rg.L===1?'0.1°':'(6/60^'+rg.L+')°'); rv.textContent=rg.pos+' × '+stepName+' = '+current+'°  ok'; rv.className='check ok'; } else { rv.textContent='—'; rv.className='check bad'; }
 }
 function setFromBox(){ const v=box.value.trim(); if(rung(v)===null){ box.style.borderColor='#ff5566'; return; } box.style.borderColor='';
   current=v.replace(/^\+/,''); const f=parseFloat(current); ang.value=((f%360)+360)%360; draw(); }
-function setFromSlider(){ const st=parseFloat(stepSel.value); const dec=st>=1?0:(st>=0.1?1:2); current=parseFloat(ang.value).toFixed(dec); box.value=current; draw(); }
+function setFromSlider(){ const sv=stepSel.value; const dec=sv.includes('.')?sv.split('.')[1].length:0; current=parseFloat(ang.value).toFixed(dec); box.value=current; draw(); }
 ang.addEventListener('input',setFromSlider);
 netTog.addEventListener('change',draw); tanTog.addEventListener('change',draw); axisSel.addEventListener('change',draw); zeroSel.addEventListener('change',draw); digTog.addEventListener('change',draw); arcTog.addEventListener('change',draw);
 stepSel.addEventListener('change',()=>{ ang.step=stepSel.value; setFromSlider(); });
@@ -338,7 +339,7 @@ document.getElementById('goE').addEventListener('click',()=>setFromLength(false)
 document.getElementById('dBox').addEventListener('keydown',e=>{ if(e.key==='Enter') setFromLength(true); });
 document.getElementById('eBox').addEventListener('keydown',e=>{ if(e.key==='Enter') setFromLength(false); });
 play.addEventListener('click',()=>{playing=!playing; play.textContent=playing?'pause':'play'; play.classList.toggle('on',playing); if(playing) tick();});
-function tick(){ if(!playing) return; const st=Math.max(parseFloat(stepSel.value),0.5); let v=parseFloat(ang.value)+dir*st; if(v>=360){v=360;dir=-1;} if(v<=0){v=0;dir=1;}
+function tick(){ if(!playing) return; const st=parseFloat(stepSel.value); let v=parseFloat(ang.value)+dir*st; if(v>=360){v=360;dir=-1;} if(v<=0){v=0;dir=1;}
   ang.value=v; setFromSlider(); setTimeout(tick,30); }
 draw();
 </script>
