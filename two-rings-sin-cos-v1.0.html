@@ -38,7 +38,13 @@ header h1 .net{color:var(--cyan);text-shadow:0 0 14px #2de2ff66}
 header p{color:var(--dim);font-size:12.5px;margin-top:2px}
 main{padding:18px 24px;max-width:1400px;margin:0 auto}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;align-items:start}
-@media (max-width:900px){.layout{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .layout > div:first-child{display:contents}              /* mobile only: promote the canvas card and the notes to grid items so they can be reordered */
+  .layout > div:first-child > .card:not(.note){order:1}    /* rings/controls first */
+  .side{order:2;position:static}                            /* then the readings + checks (was below the notes) */
+  #note{order:3}                                            /* the descriptions last */
+}
 .side{position:sticky;top:12px}
 .card{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:14px 16px;margin-bottom:14px}
 canvas{background:#080d16;border:1px solid var(--edge);border-radius:10px;max-width:100%;height:auto;display:block}
