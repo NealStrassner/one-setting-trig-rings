@@ -142,7 +142,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
     <p><b>Inverse.</b> Set the cos line or the sin line instead of the angle and the crossings find the angle (arccos, arcsin).</p>
     <p><b>The menus.</b> 0 mark: turns the whole wheel; the positions always run clockwise. Axis: turns the line of centres to run through another position; the crossings then land on that position plus and minus the step.</p>
     <p><b>Neal&#8217;s Net.</b> Solid green chords join the two digits that add to ten; dashed green chords join the two equal digits. Every chord is level or upright. On the axis through 0 and 30, or through 15 and 45, the four readings n, 30 &#8722; n, 30 + n and 60 &#8722; n are the corners of one rectangle: its four sides light and the digits at its corners are lit. On any other axis no chord joins the readings, so the digits certify nothing there.</p>
-    <p><b>Finer angles.</b> Any decimal angle sits on a rung of the ladder (level 1: 3,600 marks of 0.1°; level 2: 216,000 marks of 6 arc-seconds; and so on). The digits for a finer angle are read on that finer ring, which carries the same sixty digits.</p>
+    <p><b>Finer angles.</b> Any decimal angle sits on a rung of the ladder (level 1: 3,600 marks of 0.1°; level 2: 216,000 marks of 6 arc-seconds; and so on). The digits for a finer angle are read on that finer ring, which carries the same sixty digits. On the axis through 0 and 30 the same rectangle of the net rides on the setting, so its level and upright lines stay lit across the four readings as the ring slides between the 6° marks, not only on them.</p>
   </div>
 </div>
 <div class="side">
@@ -227,6 +227,26 @@ function drawNet(cx0,cy,R,corners){
 
   if(moving&&!netFrame){ netFrame=true; requestAnimationFrame(()=>{ netFrame=false; draw(); }); }
 }
+function drawNetFine(cx0,cy,R,deg,rg){
+  // Finer rung (paper section 6): the crossings land on a finer ring that carries the same sixty digits, and the same
+  // rectangle of the net rides on the setting. Its four corners are the two crossings (the angle's position and its
+  // mirror) and the two still-ring partners; at any angle they sit at (+/-sin, +/-cos), an axis-aligned rectangle, so
+  // its four sides are the two level and two upright lines of the net. Draw them lit, and light the four digits, so the
+  // net stays on as the ring slides between the 6-degree marks, not only on them.
+  const half=rg.N/2n, s1=((half-rg.pos)%rg.N+rg.N)%rg.N, s2=(half+rg.pos)%rg.N;
+  const corner=[[deg,D(rg.pos)],[-deg,D(rg.mirror)],[180-deg,D(s1)],[180+deg,D(s2)]];   // [bearing on the still ring, digit]
+  const P=corner.map(c=>{ const e=netCS(c[0]+6*Z); return [cx0+R*e[1], cy-R*e[0], c[1]]; });
+  const side=[[0,1],[1,3],[3,2],[2,0]];                                   // the four sides: two level (horizontal), two upright (vertical)
+  glow('#39ff14',14);
+  for(const [a,b] of side){ const ten=((P[a][2]+P[b][2])%10===0);          // a ten pair is a solid net line; an equal pair is its twin, dashed
+    g.strokeStyle='rgba(57,255,20,0.95)'; g.lineWidth=3; if(!ten) g.setLineDash([5,5]);
+    g.beginPath(); g.moveTo(P[a][0],P[a][1]); g.lineTo(P[b][0],P[b][1]); g.stroke(); g.setLineDash([]); }
+  noglow();
+  g.font='bold 22px Consolas,monospace'; g.textAlign='center'; g.textBaseline='middle';
+  for(const [x,y,dg] of P){ const tx=x+16*(x-cx0)/R, ty=y+16*(y-cy)/R;    // the digit just outside the rim
+    g.fillStyle='#080d16'; g.fillRect(tx-11,ty-11,22,22);
+    g.fillStyle='#39ff14'; glow('#39ff14',22); g.fillText(dg,tx,ty); g.fillText(dg,tx,ty); noglow(); }
+}
 function glow(col,b){ g.shadowColor=col; g.shadowBlur=b; }
 function noglow(){ g.shadowBlur=0; g.shadowColor='transparent'; }
 let Z=45;
@@ -257,7 +277,9 @@ function draw(){
     glow(col,8); g.strokeStyle=col; g.lineWidth=2; g.beginPath(); g.arc(cxR,cyR,R,0,7); g.stroke(); noglow();
     if(digTog.checked) ringDigits(cxR,cyR,R,col,hl,ox,oy,(netTog.checked&&cxR===x0&&exact)?new Set([m1,m2]):null);
   }
-  if(netTog.checked){ drawNet(x0,y0,R,new Set(exact?[n1,n2,m1,m2]:[])); }   // the four readings as positions on the still ring: n, 30-n, 30+n, 60-n when the axis is cardinal
+  if(netTog.checked){ drawNet(x0,y0,R,new Set(exact?[n1,n2,m1,m2]:[]));   // the four readings as positions on the still ring: n, 30-n, 30+n, 60-n when the axis is cardinal
+    if(!exact&&rg&&A===0) drawNetFine(x0,y0,R,deg,rg);                     // between the marks: the same rectangle on the finer ring, so the net's level and upright lines stay lit as it slides
+  }
   // the two lines
   glow(C.amb,18); g.strokeStyle=C.amb; g.lineWidth=6; g.beginPath(); g.moveTo(x0,y0); g.lineTo(x1,y1); g.stroke();
   glow(C.blu,18); g.strokeStyle=C.blu; g.lineWidth=6; g.beginPath(); g.moveTo(px,py); g.lineTo(qx,qy); g.stroke(); noglow();
@@ -286,7 +308,8 @@ function draw(){
   g.fillText(c<0?'second ring toward position '+A+' of the first: cosine negative':'second ring away from position '+A+', toward '+((A+30)%60)+' (to the right when the 0 mark is at the left): cosine positive', 16, 18);
   g.fillText(s<0?'position on the counter-clockwise side of the axis: sine negative':'position on the clockwise side of the axis: sine positive', 16, 36);
   g.fillText(exact?'each crossing lies on a mark of both rings: magenta, the second ring, carries the angle\'s position and its mirror; cyan, the first ring, their two partners'
-    :'at this angle the crossings fall between the marks of the 60-ring (only multiples of 6° land on a mark); the finer ring that holds it is in the panel', 16, H-8);
+    :(A===0?'the crossings fall between the 60-ring\'s marks and land on the finer ring (level '+(rg?rg.L:'')+'), which carries the same sixty digits; the net\'s rectangle stays lit across the four readings'
+           :'the crossings fall between the marks; the finer ring is read on the axis through 0 and 30'), 16, H-8);
   // readouts
   document.getElementById('rung').textContent=rg?('level '+rg.L+': steps of '+(UNIT[rg.L]||('6/60^'+rg.L+' degrees'))):'not a decimal angle';
   document.getElementById('pos').textContent=rg?(rg.pos+' of '+rg.N):'';
