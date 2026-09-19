@@ -91,7 +91,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
     <div class="controls">
       <span style="display:inline-flex;flex-wrap:wrap;gap:10px;align-items:center"><label>step
         <select id="stepSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
-          <option value="6" selected>6°</option><option value="1">1°</option><option value="0.1">0.1°</option><option value="0.01">0.01°</option><option value="0.001">0.001°</option><option value="0.0001">0.0001°</option><option value="0.00001">0.00001°</option><option value="0.000001">0.000001°</option><option value="0.0000001">0.0000001°</option><option value="0.00000001">0.00000001°</option>
+          <option value="6">6°</option><option value="1" selected>1°</option><option value="0.1">0.1°</option><option value="0.01">0.01°</option><option value="0.001">0.001°</option><option value="0.0001">0.0001°</option><option value="0.00001">0.00001°</option><option value="0.000001">0.000001°</option><option value="0.0000001">0.0000001°</option><option value="0.00000001">0.00000001°</option>
         </select></label><label>0 mark at
         <select id="zeroSel" style="background:#0a1322;color:#fff;border:1px solid var(--edge);border-radius:6px;padding:4px 6px;font:13px var(--mono)">
           <option value="45" selected>left</option><option value="0">top</option><option value="15">right</option><option value="30">bottom</option>
@@ -120,7 +120,7 @@ button.on{color:#001018;background:var(--cyan);border-color:var(--cyan);font-wei
       <button class="go" id="go">set</button>
     </div>
     <div class="controls" style="margin-top:-2px">
-      <input id="ang" type="range" min="0" max="360" step="6" value="36" style="flex:1 1 200px;min-width:130px"> <button id="play">play</button>
+      <input id="ang" type="range" min="0" max="360" step="1" value="36" style="flex:1 1 200px;min-width:130px"> <button id="play">play</button>
     </div>
     <canvas id="cv" width="1120" height="850"></canvas>
     <div class="legend">
